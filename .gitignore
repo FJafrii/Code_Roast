@@ -1,0 +1,36 @@
+# --- Universal ---
+.DS_Store
+.env
+
+# --- Node.js (Frontend & Backend) ---
+node_modules/
+npm-debug.log
+dist/
+build/
+
+# --- Python (AI Engine) ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+
+# --- Dependencies ---
+node_modules/
+venv/
+.venv/
+env/
+
+# --- Security ---
+.env
+
+# --- Python Junk ---
+__pycache__/
+*.py[cod]
+
+# --- Misc ---
+.DS_Store
+dist/
+build/
