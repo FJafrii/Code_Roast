@@ -1,37 +1,26 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios'); // We use this to talk to Python
+
+// Import the new route file
+const roastRoutes = require('./routes/roastRoutes');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Routes
+// Tell the app: "If anyone goes to /roast, let the roastRoutes handle it"
+app.use('/roast', roastRoutes);
+
+// Basic Health Check (Optional but good for deployment)
 app.get('/', (req, res) => {
-  res.send('🔥 Node Server is Running');
-});
-
-// The Real Roasting Route
-app.post('/roast', async (req, res) => {
-  const { code } = req.body;
-  console.log("Received code. Sending to AI Brain...");
-
-  try {
-    // 1. Send code to Python AI (Port 5000)
-    const aiResponse = await axios.post('http://127.0.0.1:5000/analyze', {
-      code: code
-    });
-    
-    // 2. Send the AI's answer back to React
-    res.json({ roast: aiResponse.data.roast });
-
-  } catch (error) {
-    console.error("AI Error:", error.message);
-    res.status(500).json({ roast: "My brain is disconnected. Check if Python is running!" });
-  }
+  res.send('🔥 Code Roaster API is running');
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

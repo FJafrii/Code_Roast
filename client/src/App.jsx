@@ -1,59 +1,63 @@
-import { useState } from 'react'
-import axios from 'axios' // You need to install this in client first!
+import { useState } from 'react';
+import axios from 'axios';
+import RoastForm from './components/RoastForm';
+import RoastDisplay from './components/RoastDisplay';
 
 function App() {
-  const [code, setCode] = useState(`function sum(a, b) {\n  return a + b;\n}`);
+  const [code, setCode] = useState("");
   const [roast, setRoast] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleRoast = async () => {
+    if (!code) return;
+    
     setLoading(true);
-    setRoast(""); // Clear previous roast
+    setRoast(""); // Clear previous roast while loading
+    
     try {
-      // Connect to our Node Backend
+      // Note: We use the full URL if we haven't set up a proxy, 
+      // but for local dev, localhost:3000 is fine.
+      // Once deployed, this URL will change to your Render backend!
       const response = await axios.post('http://localhost:3000/roast', { code });
       setRoast(response.data.roast);
     } catch (error) {
       console.error(error);
-      setRoast("Error: Could not connect to the roasting server.");
+      setRoast("Error: The AI refused to look at this code. (Check if backend is running)");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center pt-10 px-4 bg-slate-900 text-white">
-      <h1 className="text-4xl font-bold mb-4 text-red-500">🔥 Code Roaster</h1>
-      
-      <div className="flex flex-col md:flex-row gap-4 w-full max-w-5xl h-[70vh]">
+    <div className="min-h-screen bg-slate-950 text-white p-8 font-sans selection:bg-red-500/30">
+      <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* Left: Input */}
-        <div className="flex-1 flex flex-col border border-slate-700 rounded-lg p-4 bg-slate-800">
-          <textarea
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="flex-1 bg-slate-900 text-green-400 font-mono p-4 rounded outline-none resize-none"
-          />
-          <button 
-            onClick={handleRoast}
-            disabled={loading}
-            className={`mt-4 font-bold py-2 rounded transition ${loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'}`}
-          >
-            {loading ? "Judging..." : "🔥 Roast This Code"}
-          </button>
-        </div>
+        {/* Header */}
+        <header className="text-center space-y-2 mb-12">
+          <h1 className="text-5xl font-black tracking-tighter bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent drop-shadow-sm">
+            CODE ROASTER
+          </h1>
+          <p className="text-slate-400 text-lg">
+            AI-powered humiliation for your spaghetti code 🍝
+          </p>
+        </header>
 
-        {/* Right: Output */}
-        <div className="flex-1 border border-slate-700 rounded-lg p-4 bg-slate-800 overflow-auto">
-           {roast ? (
-             <p className="text-red-300 font-mono whitespace-pre-wrap">{roast}</p>
-           ) : (
-             <p className="text-slate-400 italic">AI Feedback will appear here...</p>
-           )}
-        </div>
+        {/* Main Content Grid */}
+        <main className="flex flex-col md:flex-row gap-8">
+          <RoastForm 
+            code={code} 
+            setCode={setCode} 
+            handleRoast={handleRoast} 
+            loading={loading} 
+          />
+          <RoastDisplay 
+            roast={roast} 
+          />
+        </main>
 
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
