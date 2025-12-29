@@ -1,23 +1,28 @@
-const express = require('express');
-const axios = require('axios');
-const router = express.Router();
+const express = require('express'); // <--- Missing
+const axios = require('axios');     // <--- Missing
+const router = express.Router();    // <--- This defines 'router'
 
-// This handles the POST request to '/' (which will be mounted at /roast)
+// NOW you can use router.post
 router.post('/', async (req, res) => {
-  const { code } = req.body;
+  // 1. Get 'mode' from the request body (along with code)
+  const { code, mode } = req.body; 
+  // 👇 ADD THIS SPY LOG 👇
+  console.log("--------------------------------");
+  console.log("📨 INCOMING REQUEST:");
+  console.log("Mode:", mode); // This should say 'gentle', 'strict', or 'savage'
+  console.log("--------------------------------");
 
   try {
-    // 1. Get the URL from the .env file
     const aiUrl = process.env.AI_SERVICE_URL;
 
-    // Safety Check
     if (!aiUrl) {
       throw new Error("SERVER ERROR: AI_SERVICE_URL is missing in .env file");
     }
 
-    // 2. Call the AI Service
+    // 2. Pass 'mode' along to the Python AI
     const aiResponse = await axios.post(aiUrl, {
-      code: code
+      code: code,
+      mode: mode || "savage" // Default to savage if missing
     });
 
     const roast = aiResponse.data.roast;

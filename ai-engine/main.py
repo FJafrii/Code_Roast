@@ -1,57 +1,90 @@
-import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from langchain_groq import ChatGroq
+import os
+from groq import Groq
 from dotenv import load_dotenv
 
-# 1. Load the .env file
-# This searches for a file named ".env" and loads variables into the system
 load_dotenv()
-
-# 2. Setup the AI Model
-groq_api_key = os.getenv("GROQ_API_KEY")
-
-# Safety Check
-if not groq_api_key:
-    raise ValueError("❌ API Key missing! Make sure you created the .env file.")
-
-llm = ChatGroq(
-    temperature=0.8,
-    model_name="llama-3.3-70b-versatile",  # <--- The updated, working model
-    api_key=groq_api_key,
-)
 
 app = FastAPI()
 
+# Initialize Groq Client
+client = Groq(
+    api_key=os.environ.get("GROQ_API_KEY"),
+)
 
+
+# Update the data model to accept a 'mode'
 class CodeRequest(BaseModel):
     code: str
+    mode: str = "savage"  # Default to savage if not specified
 
 
 @app.get("/")
-def home():
+def read_root():
     return {"message": "🔥 AI Roaster Engine is Online"}
 
 
 @app.post("/analyze")
 def analyze_code(request: CodeRequest):
     try:
-        print("Roasting code...")  # Log to terminal so you see it working
-        prompt = f"""
-        You are a grumpy, sarcastic, 10x Senior Engineer. 
-        Analyze this code:
-        {request.code}
-        
-        Task:
-        1. Roast it humorously.
-        2. Give 1 serious fix.
-        3. Rate it x/10.
-        
-        Keep it punchy.
-        """
+        # 1. Select the Personality based on the Slider
+        system_prompt = ""
 
-        response = llm.invoke(prompt)
-        return {"roast": response.content}
+        if request.mode == "gentle":
+            # "The Helpful Mentor"
+            system_prompt = """
+            You are a kind, patient, and encouraging Senior Engineer mentor. 
+            The user is learning. Explain their mistakes gently and use emojis. 
+            Focus on how they can improve without making them feel bad.
+            Structure: 
+            1. 🌟 What you did well
+            2. 🔧 Things to improve (explain simply)
+            3. 💡 The Fix (code snippet)
+            """
+
+        elif request.mode == "strict":
+            # "The Professional Boss"
+            system_prompt = """
+            You are a strict, no-nonsense Tech Lead. 
+            Conduct a professional Code Review. Be direct, factual, and concise. 
+            Do not make jokes, do not be mean, but do not sugarcoat errors.
+            Focus on performance, security, and clean code standards.
+            Structure:
+            1. 📊 Code Review Summary
+            2. ⚠️ Critical Issues
+            3. ✅ Recommended Refactor
+            """
+
+        else:
+            # "The Savage Roaster" (Default)
+            system_prompt = """
+            You are a savage, cynical, Senior Staff Engineer at a FAANG company. 
+            You have rejected thousands of pull requests and you have zero patience for bad code.
+            Roast the user. Make fun of their variable names. Be creative and mean.
+            Structure:
+            1. 💀 The Verdict (Brutal summary)
+            2. 🔍 The Nitpicks (Roast specific lines)
+            3. 💡 The Fix (Show them how a real dev writes it)
+            4. 📉 Seniority Rating: x/10
+            """
+
+        # 2. Call the AI with the selected personality
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": request.code,
+                },
+            ],
+            model="llama-3.3-70b-versatile",
+        )
+
+        return {"roast": chat_completion.choices[0].message.content}
 
     except Exception as e:
-        return {"roast": f"Error: {str(e)}"}
+        print("\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(f"❌ CRASH REPORT: {str(e)}")
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n")
+        raise HTTPException(status_code=500, detail=str(e))
